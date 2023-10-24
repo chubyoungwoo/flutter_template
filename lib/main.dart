@@ -15,6 +15,7 @@ import 'package:platform/platform.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_template/screens/profileScreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_template/api/auth_dio.dart';
 
 import 'homeScreen.dart';
 import 'loginScreen.dart';
@@ -31,7 +32,7 @@ void main() {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   print('main');
-  runApp( MyApp());
+  runApp(MyApp());
 }
 
 /// The route configuration.
@@ -88,7 +89,6 @@ final GoRouter _router = GoRouter(
 );
 */
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -102,13 +102,13 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       getPages: routes,
-   //  home: const RootPage()
+      //  home: const RootPage()
       home: const MyRoute(),
     );
   }
 }
 
-class MyRoute extends StatefulWidget{
+class MyRoute extends StatefulWidget {
   const MyRoute({super.key});
 
   @override
@@ -116,7 +116,6 @@ class MyRoute extends StatefulWidget{
 }
 
 class _MyRouteState extends State<MyRoute> {
-
   /* uri dip링크 설정 */
   Uri? _initialURI;
   Uri? _currentURI;
@@ -125,8 +124,8 @@ class _MyRouteState extends State<MyRoute> {
   bool _dipLink = false;
 
   String userInfo = ""; //user의 정보를 저장하기 위한 변수
-  static const storage = FlutterSecureStorage(); //flutter_secure_storage 사용을 위한 초기화 작업
-
+  static const storage =
+      FlutterSecureStorage(); //flutter_secure_storage 사용을 위한 초기화 작업
 
   Future<void> _initURIHandler() async {
     // 1
@@ -149,7 +148,7 @@ class _MyRouteState extends State<MyRoute> {
         // 4
         if (initialURI != null) {
           debugPrint("앱최초 실행 Initial URI received $initialURI");
-          showToast("앱최초 실행: $initialURI");
+          // showToast("앱최초 실행: $initialURI");
           if (!mounted) {
             return;
           }
@@ -195,7 +194,7 @@ class _MyRouteState extends State<MyRoute> {
         });
 
         //딥링크 파라미터에 따라서 화면 바로가기
-       // navigationPage();
+        // navigationPage();
         startTime();
 
         // 3
@@ -215,6 +214,7 @@ class _MyRouteState extends State<MyRoute> {
       });
     }
   }
+
 /* 외부 인테트 호출 */
   void createIntent() async {
     if (const LocalPlatform().isAndroid) {
@@ -230,8 +230,8 @@ class _MyRouteState extends State<MyRoute> {
   void initState() {
     super.initState();
     initialization();
-   // _initURIHandler();
-   // _incomingLinkHandler();
+    // _initURIHandler();
+    // _incomingLinkHandler();
 
     //비동기로 flutter secure storage 정보를 불러오는 작업.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -244,13 +244,48 @@ class _MyRouteState extends State<MyRoute> {
   _asyncMethod() async {
     //read 함수를 통하여 key값에 맞는 정보를 불러오게 됩니다. 이때 불러오는 결과의 타입은 String 타입임을 기억해야 합니다.
     //(데이터가 없을때는 null을 반환을 합니다.)
-    userInfo = (await storage.read(key: "login"))!;
-    print(userInfo);
+    //userInfo = (await storage.read(key: "login"));
+    //print(userInfo);
+    print("최초앱기동 두번호출");
+    // 로그인 인증 키가 유효한지 체크 유효하면 자동 로그인 아니면 로그인 페이지로
+    // 기기에 저장된 AccessToken 코드
+    final accessToken = await storage.read(key: 'ACCESS_TOKEN');
+
+    print("====================================");
+    print(accessToken);
     print(_dipLink);
-    //user의 정보가 있다면 바로 홈 페이지로 넝어가게 합니다.
-    if (userInfo != null && !_dipLink) {
-    //  Get.offNamed('/home');
+    print("====================================");
+
+    if (accessToken != null && !_dipLink) {
+      //보안상 무조건 액세스토큰과 리플레쉬 토큰을 재발급한다.
+
+      // 토큰 갱신 API 요청
+      var dio = await authAutoLoginDio();
+      final refreshResponse = await dio.put('/v1/accounts/refresh');
+      //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
+      final newAccessToken =
+          refreshResponse.headers['Authorization']![0].substring(7);
+      final newRefreshToken =
+          refreshResponse.headers['Refresh']![0].substring(7);
+
+      print('자동로그인 newAccessToken: $newAccessToken');
+      print('자동로그인 newRefreshToken: $newRefreshToken');
+      //기기에 저장된 AccessToken과 RefreshToken 갱신
+      await storage.write(key: 'ACCESS_TOKEN', value: newAccessToken);
+      await storage.write(key: 'REFRESH_TOKEN', value: newRefreshToken);
+
+      Get.offNamed('/home');
     }
+
+    if (accessToken == null && !_dipLink) {
+      Get.offNamed('/login');
+    }
+
+    // print(_dipLink);
+    //user의 정보가 있다면 바로 홈 페이지로 넝어가게 합니다.
+    //if (userInfo != null && !_dipLink) {
+    //  Get.offNamed('/home');
+    //}
   }
 
   void initialization() async {
@@ -273,7 +308,7 @@ class _MyRouteState extends State<MyRoute> {
   startTime() async {
     // 1초가 지나면 navigationPage 함수가 작동한다.
     debugPrint("스타트 타임 :  $_currentURI");
-    var duration = const Duration(seconds: 0);
+    var duration = const Duration(seconds: 2);
     return Timer(duration, navigationPage);
   }
 
@@ -281,12 +316,13 @@ class _MyRouteState extends State<MyRoute> {
     // 위에 설정해 준 것을 바탕으로 2초가 지난후 LoginPage로 이동할수 있게 된다.
     debugPrint("네비게이션 페이지 $_currentURI");
     // 무조건 빌드가 끝난후에 실행하게 한다. WidgetsBinding.instance!.addPostFrameCallback()
-   // WidgetsBinding.instance!.addPostFrameCallback((_) {
-      debugPrint("addPostFrameCallback 페이지 $_currentURI");
-      debugPrint("context 페이지 $context");
-     // context.goNamed('camera');
+    // WidgetsBinding.instance!.addPostFrameCallback((_) {
+    debugPrint("addPostFrameCallback 페이지 $_currentURI");
+    debugPrint("context 페이지 $context");
+    // context.goNamed('camera');
 
-    print(_currentURI.toString());
+    print('창이 죽은경우 _initialURI : ' + _initialURI.toString());
+    print('창 이 살아 있는경우_currentURI : ' + _currentURI.toString());
 
     String path = _currentURI.toString();
 
@@ -298,23 +334,24 @@ class _MyRouteState extends State<MyRoute> {
 
     //debugPrint("패스$pathAray[0]");
 
-    if(pathAray.length > 1) {
+    if (pathAray.length > 1) {
+      // Get.offNamed('/');
+      Get.offNamed('/home');
       Get.toNamed('/${pathAray[1].substring(5)}');
       //Get.toNamed(pathAray[1]);
     }
 
     //  Get.toNamed('/splash');
-     // Get.toNamed('/login');
-     // Get.offNamed('/home');
+    // Get.toNamed('/login');
+    // Get.offNamed('/home');
     //  Get.toNamed('/camera');
-     // GoRouter.of(context).goNamed('camera');
+    // GoRouter.of(context).goNamed('camera');
 
-   // });
+    // });
   }
 
   @override
   void dispose() {
-
     debugPrint("네비게이션 dispose $_currentURI");
 
     _streamSubscription?.cancel();
@@ -323,18 +360,30 @@ class _MyRouteState extends State<MyRoute> {
 
   @override
   Widget build(BuildContext context) {
-
     debugPrint("BuildContext _dipLink $_dipLink");
     return MaterialApp(
-     // routerConfig: _router,
-    //  theme: ThemeData.dark().copyWith(
-    //    scaffoldBackgroundColor: darkBlue,
-    //  ),
-      debugShowCheckedModeBanner: false,
-      title: 'Go router',
-      home: _dipLink ? const HomeScreen() : const NativeSplashScreen(),
-    //    home: _dipLink ? const HomeScreen() : const RootPage(),
-    );
+        // routerConfig: _router,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: darkBlue,
+        ),
+        debugShowCheckedModeBanner: false,
+        title: 'Go router',
+        // home: const Scaffold(
+        //   body: Column(
+        //     children: [
+        //       Padding(padding: EdgeInsets.only(top: 50)),
+        //       Center(
+        //         child: Image(
+        //           image: AssetImage('assets/images/splash.jpg'),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        home: const NativeSplashScreen()
+        // home: _dipLink ? const HomeScreen() : const NativeSplashScreen(),
+        //    home: _dipLink ? const HomeScreen() : const RootPage(),
+        );
   }
 }
 
@@ -347,5 +396,5 @@ void showToast(msg) {
       backgroundColor: Colors.black, //배경색
       textColor: Colors.white, //글자색
       fontSize: 16.0 //폰트사이즈
-  );
+      );
 }

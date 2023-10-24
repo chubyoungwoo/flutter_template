@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,17 +24,19 @@ class LogInScreen extends StatefulWidget {
 }
 
 class _LogInState extends State<LogInScreen> {
-
   /* uri dip링크 설정 */
   Uri? _initialURI;
   Uri? _currentURI;
   Object? _err;
   StreamSubscription? _streamSubscription;
 
-  TextEditingController emailController = TextEditingController(text: "cbw@hello.com");
-  TextEditingController passwordController = TextEditingController(text:"12345");
+  TextEditingController emailController =
+      TextEditingController(text: "cbw@hello.com");
+  TextEditingController passwordController =
+      TextEditingController(text: "12345");
 
-  static const storage = FlutterSecureStorage(); //flutter_secure_storage 사용을 위한 초기화 작업
+  static const storage =
+      FlutterSecureStorage(); //flutter_secure_storage 사용을 위한 초기화 작업
 
   Future<void> _initURIHandler() async {
     // 1
@@ -115,6 +118,7 @@ class _LogInState extends State<LogInScreen> {
       });
     }
   }
+
 /* 외부 인테트 호출 */
   void createIntent() async {
     if (const LocalPlatform().isAndroid) {
@@ -129,8 +133,8 @@ class _LogInState extends State<LogInScreen> {
   @override
   void initState() {
     super.initState();
-  //  _initURIHandler();
-  //  _incomingLinkHandler();
+    //  _initURIHandler();
+    //  _incomingLinkHandler();
   }
 
   void navigationPage() {
@@ -179,98 +183,98 @@ class _LogInState extends State<LogInScreen> {
               ),
               Form(
                   child: Theme(
-                    data: ThemeData(
-                        primaryColor: Colors.grey,
-                        inputDecorationTheme: const InputDecorationTheme(
-                            labelStyle: TextStyle(color: Colors.teal, fontSize: 15.0))),
-                    child: Container(
-                        padding: const EdgeInsets.all(40.0),
-                        child: Builder(builder: (context) {
-                          return Column(
-                            children: [
-                              TextField(
-                                controller: emailController,
-                                autofocus: false,
-                                decoration: const InputDecoration(labelText: '이메일'),
-                                keyboardType: TextInputType.emailAddress,
-                              ),
-                              TextField(
-                                controller: passwordController,
-                                decoration:
+                data: ThemeData(
+                    primaryColor: Colors.grey,
+                    inputDecorationTheme: const InputDecorationTheme(
+                        labelStyle:
+                            TextStyle(color: Colors.teal, fontSize: 15.0))),
+                child: Container(
+                    padding: const EdgeInsets.all(40.0),
+                    child: Builder(builder: (context) {
+                      return Column(
+                        children: [
+                          TextField(
+                            controller: emailController,
+                            autofocus: false,
+                            decoration: const InputDecoration(labelText: '이메일'),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          TextField(
+                            controller: passwordController,
+                            decoration:
                                 const InputDecoration(labelText: '비밀번호'),
-                                keyboardType: TextInputType.text,
-                                obscureText: true, // 비밀번호 안보이도록 하는 것
-                              ),
-                              const SizedBox(
-                                height: 40.0,
-                              ),
-                              ButtonTheme(
-                                  minWidth: 100.0,
-                                  height: 50.0,
-                                  child: ElevatedButton(
-                                    onPressed: () async {
+                            keyboardType: TextInputType.text,
+                            obscureText: true, // 비밀번호 안보이도록 하는 것
+                          ),
+                          const SizedBox(
+                            height: 40.0,
+                          ),
+                          ButtonTheme(
+                              minWidth: 100.0,
+                              height: 50.0,
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  if (emailController.text == '') {
+                                    showSnackBar(
+                                        context, const Text('이메일을 입력하세요'));
+                                    return;
+                                  }
+                                  if (passwordController.text == '') {
+                                    showSnackBar(
+                                        context, const Text('비밀번호를 입력하세요'));
+                                    return;
+                                  }
+                                  // 로그인 처리
+                                  var dio = await authLoginDio(context);
+                                  try {
+                                    final response = await dio
+                                        .post('/v1/accounts/token', data: {
+                                      "username": emailController.text,
+                                      "password": passwordController.text
+                                    });
 
-                                      if (emailController.text == '') {
-                                        showSnackBar(context, const Text('이메일을 입력하세요'));
-                                        return;
-                                      }
-                                      if (passwordController.text == '') {
-                                        showSnackBar(context, const Text('비밀번호를 입력하세요'));
-                                        return;
-                                      }
-                                      // 로그인 처리
-                                      // post
-                                      storage.deleteAll();
+                                    Map<String, dynamic> responseMap =
+                                        response.data;
 
-                                      var dio = await authDio(context);
-                                      try {
-                                         final response = await dio.post(
-                                            '/v1/accounts/token',
-                                            data: {
-                                              "username": "admin",
-                                              "password": "12345"
-                                            });
-                                        print(response.data);
+                                    print(responseMap);
+                                    print(responseMap["success"]);
 
-                                         //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
-                                         final accessToken = response.headers['Authorization']![0].substring(7);
-                                         final refreshToken = response.headers['Refresh']![0].substring(7);
+                                    //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
+                                    final accessToken = response
+                                        .headers['Authorization']![0]
+                                        .substring(7);
+                                    final refreshToken = response
+                                        .headers['Refresh']![0]
+                                        .substring(7);
 
-                                         print ('accessToken: $accessToken');
-                                         print ('refreshToken: $refreshToken');
+                                    print('accessToken: $accessToken');
+                                    print('refreshToken: $refreshToken');
 
-                                         //기기에 저장된 AccessToken과 RefreshToken 갱신
-                                         await storage.write(key: 'ACCESS_TOKEN', value: accessToken);
-                                         await storage.write(key: 'REFRESH_TOKEN', value: refreshToken);
+                                    //기기에 저장된 AccessToken과 RefreshToken 갱신
+                                    await storage.write(
+                                        key: 'ACCESS_TOKEN',
+                                        value: accessToken);
+                                    await storage.write(
+                                        key: 'REFRESH_TOKEN',
+                                        value: refreshToken);
 
-                                      } catch (e) {
-                                        print(e);
-                                      }
-
-                                      // write 함수를 통하여 key에 맞는 정보를 적게 됩니다.
-                                      //{"login" : "id id_value password password_value"}
-                                      //와 같은 형식으로 저장이 된다고 생각을 하면 됩니다.
-                                      await storage.write(
-                                          key: "login",
-                                          value: "id ${emailController.text} password ${passwordController.text}"
-                                      );
-                                      Get.offNamed('/home');
-
-
-                                    },
-
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orangeAccent),
-                                    child: const Icon(
-                                      Icons.arrow_forward,
-                                      color: Colors.white,
-                                      size: 35.0,
-                                    ),
-                                  ))
-                            ],
-                          );
-                        })),
-                  ))
+                                    Get.offNamed('/home');
+                                  } catch (e) {
+                                    print(e);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orangeAccent),
+                                child: const Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  size: 35.0,
+                                ),
+                              ))
+                        ],
+                      );
+                    })),
+              ))
             ],
           ),
         ),
@@ -290,15 +294,14 @@ void showSnackBar(BuildContext context, Text text) {
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 
-
 void showToast(msg) {
   Fluttertoast.showToast(
       msg: msg, //메세지입력
-      toastLength: Toast.LENGTH_LONG, //메세지를 보여주는 시간(길이)
+      toastLength: Toast.LENGTH_SHORT, //메세지를 보여주는 시간(길이)
       gravity: ToastGravity.CENTER, //위치지정
       timeInSecForIosWeb: 1, //ios및웹용 시간
       backgroundColor: Colors.black, //배경색
       textColor: Colors.white, //글자색
       fontSize: 16.0 //폰트사이즈
-  );
+      );
 }
