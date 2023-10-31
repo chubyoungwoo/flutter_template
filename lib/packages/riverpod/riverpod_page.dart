@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../../api/auth_dio.dart';
 
-class CrudPage extends StatefulWidget {
-  const CrudPage({super.key});
+class RiverPodPage extends StatefulWidget {
+  const RiverPodPage({super.key});
 
   @override
-  createState() => _CrudState();
+  createState() => _RiverPodState();
 }
 
-class _CrudState extends State<CrudPage> {
+class _RiverPodState extends State<RiverPodPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: const Text('CRUD 테스트'),
+        title: const Text('RiverPod CRUD 테스트'),
         elevation: 0.0,
       ),
       body: Center(

@@ -28,30 +28,38 @@ class _HomeState extends State<HomePage> {
               Padding(
                 padding: EdgeInsets.all(32.0),
                 child: Row(
-
                   children: <Widget>[
                     ElevatedButton(
                       onPressed: () {
-                        Get.toNamed('/crud');
+                        Get.toNamed('/riverpod');
                       },
-                      child: const Text('CRUD'),
+                      child: const Text('RiverPod'),
                     ),
-                    const SizedBox(width: 10,),
+                    const SizedBox(
+                      width: 10,
+                    ),
                     ElevatedButton(
                       onPressed: () {
                         Get.toNamed('/retrofit');
                       },
                       child: const Text('Retrofit'),
                     ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Get.toNamed('/provider');
+                      },
+                      child: const Text('Provider'),
+                    ),
                   ],
-                ) ,
+                ),
               )
             ],
           ),
         ),
       ),
     );
-   
   }
-  
 }

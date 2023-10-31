@@ -3,7 +3,8 @@ import 'package:flutter_template/detailsScreen.dart';
 import 'package:flutter_template/homeScreen.dart';
 import 'package:flutter_template/loginScreen.dart';
 import 'package:flutter_template/nativeSplashScreen.dart';
-import 'package:flutter_template/packages/crud/crud_page.dart';
+import 'package:flutter_template/packages/provider/view/user_view.dart';
+import 'package:flutter_template/packages/riverpod/page/user_home_page.dart';
 import 'package:flutter_template/pages/rootPage.dart';
 import 'package:flutter_template/screens/profileScreen.dart';
 import 'package:get/get.dart';
@@ -18,7 +19,8 @@ List<GetPage> routes = [
   GetPage(name: '/profile', page: () => const ProfileScreen()),
   GetPage(name: '/login', page: () => const LogInScreen()),
   GetPage(name: '/details', page: () => const DetailsScreen()),
-  GetPage(name: '/crud', page: () => const CrudPage()),
+  GetPage(name: '/riverpod', page: () => const UserHomePage()),
+  GetPage(name: '/provider', page: () => const UserView()),
 
   /*
   GetPage(name: "/retrofit", page: () => const RetrofitScreen()),

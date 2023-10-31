@@ -47,7 +47,7 @@ dependencies:
   video_player: ^2.7.2
   http: ^1.1.0
   dio: ^5.3.3
-  json_annotation:
+  json_annotation: ^4.6.0
   retrofit:
   freezed_annotation:
   flutter_bloc:
@@ -60,14 +60,15 @@ dependencies:
   sqlite3_flutter_libs:
   path_provider:
   path:
-  flutter_riverpod:
   provider:
   flutter_staggered_grid_view:
+  flutter_riverpod: ^2.4.4
+  logging: ^1.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: any
+  build_runner: ^2.4.5
   build_runner_core: ^7.2.8
   flutter_gen_runner:
 
@@ -78,7 +79,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: 2.0.0
   retrofit_generator:
-  json_serializable:
+  json_serializable: ^6.3.1
   freezed:
   moor_generator:
 

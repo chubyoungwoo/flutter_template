@@ -2,8 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get/get.dart';
-import 'package:flutter_template/api/auth_dio.dart';
+import 'package:get/get.dart' hide Response;
 
 /*
   함수의 인자로 BuildContext를 따로 받는 이유는 Dialog를 사용해 로그인 만료를 알리거나 Navigator를 통해 로그인 재요청 페이지로 이동하려면 현재 사용자가 머물고 있는
@@ -17,7 +16,7 @@ import 'package:flutter_template/api/auth_dio.dart';
 
 const String baseUrl = 'http://192.168.0.9:8080/api';
 
-Future<Dio> authDio(BuildContext context) async {
+Future<Dio> authDio() async {
   var dio = Dio();
   //const String baseUrl = 'http://192.168.0.9:8080/api';
 
@@ -121,6 +120,8 @@ Future<Dio> authLoginDio(BuildContext context) async {
   var dio = Dio();
 //  const String baseUrl = 'http://192.168.0.9:8080/api';
 
+  debugPrint('로그인');
+
   const storage = FlutterSecureStorage();
 
   dio.options.baseUrl = baseUrl;
@@ -136,6 +137,7 @@ Future<Dio> authLoginDio(BuildContext context) async {
 
     return handler.next(options);
   }, onError: (error, handler) async {
+    debugPrint('에러============> $error.response?.statusCode');
     //에러발생시
     if (error.response?.statusCode == 400) {
       // 응답값을 map 형식으로 변환
@@ -154,6 +156,8 @@ Future<Dio> authLoginDio(BuildContext context) async {
       responseBody: true,
       responseHeader: true));
 
+  dio.interceptors.add(NetworkInterceptor());
+
   return dio;
 }
 
@@ -162,6 +166,8 @@ Future<Dio> authAutoLoginDio() async {
   var dio = Dio();
 
   const storage = FlutterSecureStorage();
+
+  debugPrint('자동로그인');
 
   // 기기에 저장된 AccessToken과 RefreshToken 로드
   final accessToken = await storage.read(key: 'ACCESS_TOKEN');
@@ -196,7 +202,29 @@ Future<Dio> authAutoLoginDio() async {
       responseBody: true,
       responseHeader: true));
 
+  dio.interceptors.add(NetworkInterceptor());
+
   return dio;
+}
+
+class NetworkInterceptor extends Interceptor {
+  NetworkInterceptor();
+
+  @override
+  void onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) {
+    print('onError: $err');
+    print(err.type);
+
+    if (err.type == DioExceptionType.connectionTimeout) {
+      print('커넥션타임아웃');
+      showToast("서버에 응답이 없습니다. 네트워크를 확인해 주세요.");
+    }
+
+    super.onError(err, handler);
+  }
 }
 
 void showToast(msg) {

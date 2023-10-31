@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_template/packages/provider/view/user_view.dart';
+import 'package:flutter_template/packages/provider/viewModel/user_view_model.dart';
 import 'package:flutter_template/pages/rootPage.dart';
 import 'package:flutter_template/routes/route.dart';
 import 'package:get/get.dart';
@@ -16,6 +18,8 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_template/screens/profileScreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_template/api/auth_dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+//import 'package:provider/provider.dart';
 
 import 'homeScreen.dart';
 import 'loginScreen.dart';
@@ -32,7 +36,10 @@ void main() {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   print('main');
-  runApp(MyApp());
+//  runApp(const MyApp());
+  runApp(const ProviderScope(
+      //riverpod 사용 scope설정
+      child: MyApp()));
 }
 
 /// The route configuration.
@@ -104,6 +111,13 @@ class MyApp extends StatelessWidget {
       getPages: routes,
       //  home: const RootPage()
       home: const MyRoute(),
+/*
+        home: ChangeNotifierProvider<UserViewModel>(
+          create: (context) => UserViewModel(),
+          // child: const UserView(),
+          child: const MyRoute(),
+        )
+        */
     );
   }
 }
@@ -241,6 +255,13 @@ class _MyRouteState extends State<MyRoute> {
     print('메인 init 호출');
   }
 
+/* BuildContext를 사용하고 싶을때 initState에서는 context가 형성되기전에 실행된다. */
+  @override
+  void didChangeDependencies() {
+    print('메인 didChangeDependencies 호출');
+    super.didChangeDependencies();
+  }
+
   _asyncMethod() async {
     //read 함수를 통하여 key값에 맞는 정보를 불러오게 됩니다. 이때 불러오는 결과의 타입은 String 타입임을 기억해야 합니다.
     //(데이터가 없을때는 null을 반환을 합니다.)
@@ -261,20 +282,27 @@ class _MyRouteState extends State<MyRoute> {
 
       // 토큰 갱신 API 요청
       var dio = await authAutoLoginDio();
-      final refreshResponse = await dio.put('/v1/accounts/refresh');
-      //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
-      final newAccessToken =
-          refreshResponse.headers['Authorization']![0].substring(7);
-      final newRefreshToken =
-          refreshResponse.headers['Refresh']![0].substring(7);
+      try {
+        final refreshResponse = await dio.put('/v1/accounts/refresh');
+        //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
+        final newAccessToken =
+            refreshResponse.headers['Authorization']![0].substring(7);
+        final newRefreshToken =
+            refreshResponse.headers['Refresh']![0].substring(7);
 
-      print('자동로그인 newAccessToken: $newAccessToken');
-      print('자동로그인 newRefreshToken: $newRefreshToken');
-      //기기에 저장된 AccessToken과 RefreshToken 갱신
-      await storage.write(key: 'ACCESS_TOKEN', value: newAccessToken);
-      await storage.write(key: 'REFRESH_TOKEN', value: newRefreshToken);
+        print('자동로그인 newAccessToken: $newAccessToken');
+        print('자동로그인 newRefreshToken: $newRefreshToken');
+        //기기에 저장된 AccessToken과 RefreshToken 갱신
+        await storage.write(key: 'ACCESS_TOKEN', value: newAccessToken);
+        await storage.write(key: 'REFRESH_TOKEN', value: newRefreshToken);
 
-      Get.offNamed('/home');
+        // Get.toNamed('/home');
+
+        Get.offNamed('/home');
+      } catch (e) {
+        print('자동로그인 에러발생');
+        print(e);
+      }
     }
 
     if (accessToken == null && !_dipLink) {

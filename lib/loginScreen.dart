@@ -24,6 +24,9 @@ class LogInScreen extends StatefulWidget {
 }
 
 class _LogInState extends State<LogInScreen> {
+  //로그인버튼 활성화
+  bool isEnabled = true;
+
   /* uri dip링크 설정 */
   Uri? _initialURI;
   Uri? _currentURI;
@@ -213,56 +216,68 @@ class _LogInState extends State<LogInScreen> {
                               minWidth: 100.0,
                               height: 50.0,
                               child: ElevatedButton(
-                                onPressed: () async {
-                                  if (emailController.text == '') {
-                                    showSnackBar(
-                                        context, const Text('이메일을 입력하세요'));
-                                    return;
-                                  }
-                                  if (passwordController.text == '') {
-                                    showSnackBar(
-                                        context, const Text('비밀번호를 입력하세요'));
-                                    return;
-                                  }
-                                  // 로그인 처리
-                                  var dio = await authLoginDio(context);
-                                  try {
-                                    final response = await dio
-                                        .post('/v1/accounts/token', data: {
-                                      "username": emailController.text,
-                                      "password": passwordController.text
-                                    });
+                                onPressed: isEnabled
+                                    ? () async {
+                                        if (emailController.text == '') {
+                                          showSnackBar(context,
+                                              const Text('이메일을 입력하세요'));
+                                          return;
+                                        }
+                                        if (passwordController.text == '') {
+                                          showSnackBar(context,
+                                              const Text('비밀번호를 입력하세요'));
+                                          return;
+                                        }
+                                        setState(() {
+                                          isEnabled = false;
+                                        });
+                                        // 로그인 처리
+                                        var dio = await authLoginDio(context);
+                                        try {
+                                          final response = await dio.post(
+                                              '/v1/accounts/token',
+                                              data: {
+                                                "username":
+                                                    emailController.text,
+                                                "password":
+                                                    passwordController.text
+                                              });
 
-                                    Map<String, dynamic> responseMap =
-                                        response.data;
+                                          Map<String, dynamic> responseMap =
+                                              response.data;
 
-                                    print(responseMap);
-                                    print(responseMap["success"]);
+                                          print(responseMap);
+                                          print(responseMap["success"]);
 
-                                    //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
-                                    final accessToken = response
-                                        .headers['Authorization']![0]
-                                        .substring(7);
-                                    final refreshToken = response
-                                        .headers['Refresh']![0]
-                                        .substring(7);
+                                          //response 로 부터 새로 갱신된 AccessToken과 RefreshToken 파싱
+                                          final accessToken = response
+                                              .headers['Authorization']![0]
+                                              .substring(7);
+                                          final refreshToken = response
+                                              .headers['Refresh']![0]
+                                              .substring(7);
 
-                                    print('accessToken: $accessToken');
-                                    print('refreshToken: $refreshToken');
+                                          print('accessToken: $accessToken');
+                                          print('refreshToken: $refreshToken');
 
-                                    //기기에 저장된 AccessToken과 RefreshToken 갱신
-                                    await storage.write(
-                                        key: 'ACCESS_TOKEN',
-                                        value: accessToken);
-                                    await storage.write(
-                                        key: 'REFRESH_TOKEN',
-                                        value: refreshToken);
+                                          //기기에 저장된 AccessToken과 RefreshToken 갱신
+                                          await storage.write(
+                                              key: 'ACCESS_TOKEN',
+                                              value: accessToken);
+                                          await storage.write(
+                                              key: 'REFRESH_TOKEN',
+                                              value: refreshToken);
 
-                                    Get.offNamed('/home');
-                                  } catch (e) {
-                                    print(e);
-                                  }
-                                },
+                                          Get.offNamed('/home');
+                                        } catch (e) {
+                                          print('에러발생');
+                                          print(e);
+                                          setState(() {
+                                            isEnabled = true;
+                                          });
+                                        }
+                                      }
+                                    : null,
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.orangeAccent),
                                 child: const Icon(
